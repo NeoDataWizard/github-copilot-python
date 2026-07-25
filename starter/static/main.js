@@ -1,6 +1,7 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 const LEADERBOARD_STORAGE_KEY = 'sudoku-leaderboard';
+const THEME_STORAGE_KEY = 'sudoku-theme';
 let puzzle = [];
 let elapsedSeconds = 0;
 let timerIntervalId = null;
@@ -14,10 +15,69 @@ function formatTime(totalSeconds) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+function getStoredTheme() {
+  try {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    if (storedTheme === 'dark' || storedTheme === 'light') {
+      return storedTheme;
+    }
+  } catch (error) {
+    console.warn('Could not read theme preference:', error);
+  }
+
+  return 'light';
+}
+
+function applyTheme(theme) {
+  const isDarkTheme = theme === 'dark';
+  document.body.classList.toggle('theme-dark', isDarkTheme);
+
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.setAttribute('aria-pressed', String(isDarkTheme));
+    themeToggle.setAttribute('aria-label', isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode');
+    const label = themeToggle.querySelector('.theme-toggle__label');
+    const stateLabel = themeToggle.querySelector('.theme-toggle__state');
+    if (label) {
+      label.textContent = isDarkTheme ? 'Light Mode' : 'Dark Mode';
+    }
+    if (stateLabel) {
+      stateLabel.textContent = isDarkTheme ? 'On' : 'Off';
+    }
+  }
+}
+
+function toggleTheme() {
+  const nextTheme = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+  applyTheme(nextTheme);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  } catch (error) {
+    console.warn('Could not save theme preference:', error);
+  }
+}
+
 function updateTimerDisplay() {
   const timerElement = document.getElementById('timer');
   if (timerElement) {
     timerElement.textContent = formatTime(elapsedSeconds);
+  }
+}
+
+function setMessage(text, tone = 'error') {
+  const msg = document.getElementById('message');
+  if (!msg) {
+    return;
+  }
+
+  msg.textContent = text;
+  msg.className = 'message';
+  if (tone === 'success') {
+    msg.classList.add('message-success');
+  } else if (tone === 'info') {
+    msg.classList.add('message-info');
+  } else {
+    msg.classList.add('message-error');
   }
 }
 
@@ -293,7 +353,7 @@ async function newGame() {
   const res = await fetch(`/new?clues=${clues}`);
   const data = await res.json();
   renderPuzzle(data.puzzle);
-  document.getElementById('message').innerText = '';
+  setMessage('', 'error');
 }
 
 async function hintSolution() {
@@ -306,13 +366,11 @@ async function hintSolution() {
   const data = await res.json();
   const msg = document.getElementById('message');
   if (data.error) {
-    msg.style.color = '#d32f2f';
-    msg.innerText = data.error;
+    setMessage(data.error, 'error');
     return;
   }
   if (data.message) {
-    msg.style.color = '#1976d2';
-    msg.innerText = data.message;
+    setMessage(data.message, 'info');
     return;
   }
 
@@ -324,8 +382,7 @@ async function hintSolution() {
   inp.disabled = true;
   inp.className = 'sudoku-cell hinted';
   hintsUsed += 1;
-  msg.style.color = '#1976d2';
-  msg.innerText = 'Hint applied.';
+  setMessage('Hint applied.', 'info');
 }
 
 function showScoreEntry() {
@@ -361,10 +418,8 @@ function handleSaveScore() {
 }
 
 async function checkSolution() {
-  const msg = document.getElementById('message');
   if (gameCompleted) {
-    msg.style.color = '#388e3c';
-    msg.innerText = `Congratulations! You solved it in ${formatTime(elapsedSeconds)} with ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}.`;
+    setMessage(`Congratulations! You solved it in ${formatTime(elapsedSeconds)} with ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}.`, 'success');
     if (!scoreSaved) {
       showScoreEntry();
     }
@@ -383,16 +438,14 @@ async function checkSolution() {
   try {
     data = JSON.parse(request.responseText);
   } catch (error) {
-    msg.style.color = '#d32f2f';
-    msg.innerText = 'Unable to validate puzzle at the moment.';
+    setMessage('Unable to validate puzzle at the moment.', 'error');
     return;
   }
 
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
   if (data.error) {
-    msg.style.color = '#d32f2f';
-    msg.innerText = data.error;
+    setMessage(data.error, 'error');
     return;
   }
   const incorrect = new Set(data.incorrect.map(x => x[0] * SIZE + x[1]));
@@ -406,14 +459,14 @@ async function checkSolution() {
   if (boardIsFilled && incorrect.size === 0) {
     gameCompleted = true;
     stopTimer();
-    msg.style.color = '#388e3c';
-    msg.innerText = `Congratulations! You solved it in ${formatTime(elapsedSeconds)} with ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}.`;
+    setMessage(`Congratulations! You solved it in ${formatTime(elapsedSeconds)} with ${hintsUsed} hint${hintsUsed === 1 ? '' : 's'}.`, 'success');
     showScoreEntry();
   } else {
-    msg.style.color = '#d32f2f';
-    msg.innerText = 'Puzzle is not yet correct. Keep trying.';
+    setMessage('Puzzle is not yet correct. Keep trying.', 'error');
   }
 }
+
+applyTheme(getStoredTheme());
 
 // Wire buttons
 window.addEventListener('load', () => {
@@ -421,6 +474,10 @@ window.addEventListener('load', () => {
   document.getElementById('hint-solution').addEventListener('click', hintSolution);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   document.getElementById('save-score').addEventListener('click', handleSaveScore);
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', toggleTheme);
+  }
   renderLeaderboard();
   // initialize
   newGame();
