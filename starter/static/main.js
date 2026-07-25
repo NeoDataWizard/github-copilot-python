@@ -83,10 +83,25 @@ function renderPuzzle(puz) {
   }
 }
 
+function getSelectedDifficultyClues() {
+  const difficultySelect = document.getElementById('difficulty-select');
+  const difficulty = difficultySelect ? difficultySelect.value : 'Medium';
+  switch (difficulty) {
+    case 'Easy':
+      return 40;
+    case 'Hard':
+      return 30;
+    case 'Medium':
+    default:
+      return 35;
+  }
+}
+
 async function newGame() {
   resetTimer();
   startTimer();
-  const res = await fetch('/new');
+  const clues = getSelectedDifficultyClues();
+  const res = await fetch(`/new?clues=${clues}`);
   const data = await res.json();
   renderPuzzle(data.puzzle);
   document.getElementById('message').innerText = '';

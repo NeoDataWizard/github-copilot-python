@@ -70,6 +70,19 @@ h1 {
     margin: 20px auto;
 }
 
+.difficulty-control {
+    margin-right: 8px;
+    font-size: 16px;
+    color: #333;
+}
+
+#difficulty-select {
+    padding: 8px 10px;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
 button {
     padding: 8px 18px;
     margin: 0 8px;

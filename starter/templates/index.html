@@ -10,6 +10,12 @@
   <div id="timer" aria-live="polite">00:00</div>
   <div id="sudoku-board"></div>
   <div class="controls">
+    <label class="difficulty-control" for="difficulty-select">Difficulty</label>
+    <select id="difficulty-select" aria-label="Select game difficulty">
+      <option value="Easy">Easy</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="Hard">Hard</option>
+    </select>
     <button id="new-game">New Game</button>
     <button id="check-solution">Check Solution</button>
     <span id="message"></span>
