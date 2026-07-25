@@ -1,6 +1,42 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 let puzzle = [];
+let elapsedSeconds = 0;
+let timerIntervalId = null;
+
+function formatTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function updateTimerDisplay() {
+  const timerElement = document.getElementById('timer');
+  if (timerElement) {
+    timerElement.textContent = formatTime(elapsedSeconds);
+  }
+}
+
+function stopTimer() {
+  if (timerIntervalId !== null) {
+    clearInterval(timerIntervalId);
+    timerIntervalId = null;
+  }
+}
+
+function startTimer() {
+  stopTimer();
+  timerIntervalId = window.setInterval(() => {
+    elapsedSeconds += 1;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function resetTimer() {
+  stopTimer();
+  elapsedSeconds = 0;
+  updateTimerDisplay();
+}
 
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
@@ -48,6 +84,8 @@ function renderPuzzle(puz) {
 }
 
 async function newGame() {
+  resetTimer();
+  startTimer();
   const res = await fetch('/new');
   const data = await res.json();
   renderPuzzle(data.puzzle);
