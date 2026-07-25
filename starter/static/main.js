@@ -39,9 +39,75 @@ function resetTimer() {
   updateTimerDisplay();
 }
 
+function isValueInConflict(board, row, col, value) {
+  if (value === 0) {
+    return false;
+  }
+
+  for (let idx = 0; idx < SIZE; idx += 1) {
+    if (idx !== col && board[row][idx] === value) {
+      return true;
+    }
+    if (idx !== row && board[idx][col] === value) {
+      return true;
+    }
+  }
+
+  const startRow = Math.floor(row / 3) * 3;
+  const startCol = Math.floor(col / 3) * 3;
+  for (let r = startRow; r < startRow + 3; r += 1) {
+    for (let c = startCol; c < startCol + 3; c += 1) {
+      if ((r !== row || c !== col) && board[r][c] === value) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function updateCellValidation(input) {
+  if (!input || !(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  if (input.disabled || input.classList.contains('prefilled') || input.classList.contains('hinted')) {
+    input.classList.remove('invalid');
+    input.setAttribute('aria-invalid', 'false');
+    return;
+  }
+
+  const row = parseInt(input.dataset.row, 10);
+  const col = parseInt(input.dataset.col, 10);
+  const value = input.value ? parseInt(input.value, 10) : 0;
+  const board = getBoardState();
+  const isInvalid = isValueInConflict(board, row, col, value);
+
+  input.classList.toggle('invalid', isInvalid);
+  input.setAttribute('aria-invalid', isInvalid ? 'true' : 'false');
+}
+
+function handleBoardInput(event) {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement) || !input.classList.contains('sudoku-cell')) {
+    return;
+  }
+
+  const sanitizedValue = input.value.replace(/[^1-9]/g, '');
+  if (input.value !== sanitizedValue) {
+    input.value = sanitizedValue;
+  }
+
+  updateCellValidation(input);
+}
+
 function createBoardElement() {
   const boardDiv = document.getElementById('sudoku-board');
   boardDiv.innerHTML = '';
+  if (!boardDiv.dataset.validationBound) {
+    boardDiv.addEventListener('input', handleBoardInput);
+    boardDiv.dataset.validationBound = 'true';
+  }
   for (let i = 0; i < SIZE; i++) {
     const rowDiv = document.createElement('div');
     rowDiv.className = 'sudoku-row';
@@ -52,10 +118,6 @@ function createBoardElement() {
       input.className = 'sudoku-cell';
       input.dataset.row = i;
       input.dataset.col = j;
-      input.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/[^1-9]/g, '');
-        e.target.value = val;
-      });
       rowDiv.appendChild(input);
     }
     boardDiv.appendChild(rowDiv);
@@ -75,10 +137,11 @@ function renderPuzzle(puz) {
       if (val !== 0) {
         inp.value = val;
         inp.disabled = true;
-        inp.className += ' prefilled';
+        inp.className = 'sudoku-cell prefilled';
       } else {
         inp.value = '';
         inp.disabled = false;
+        inp.className = 'sudoku-cell';
       }
     }
   }
