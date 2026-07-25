@@ -15,6 +15,8 @@
     --grid-border: #bbb;
     --cell-bg: #fafafa;
     --cell-focus-bg: #e0f7fa;
+    --region-bg-a: #f7f8fc;
+    --region-bg-b: #eef3ff;
     --prefilled-bg: #e0e0e0;
     --prefilled-color: #333;
     --hint-bg: #fff9c4;
@@ -52,6 +54,8 @@ body.theme-dark {
     --grid-border: #455a64;
     --cell-bg: #263238;
     --cell-focus-bg: #37474f;
+    --region-bg-a: #2a2f35;
+    --region-bg-b: #313c45;
     --prefilled-bg: #37474f;
     --prefilled-color: #f5f5f5;
     --hint-bg: #5d4037;
@@ -121,6 +125,23 @@ h1 {
 
 .sudoku-cell:focus {
     background: var(--cell-focus-bg);
+}
+
+/* Alternate the background of the 3x3 regions without affecting cell size or layout. */
+.sudoku-row:nth-child(-n + 3) .sudoku-cell:nth-child(-n + 3),
+.sudoku-row:nth-child(-n + 3) .sudoku-cell:nth-child(n + 7):nth-child(-n + 9),
+.sudoku-row:nth-child(n + 4):nth-child(-n + 6) .sudoku-cell:nth-child(n + 4):nth-child(-n + 6),
+.sudoku-row:nth-child(n + 4):nth-child(-n + 6) .sudoku-cell:nth-child(n + 7):nth-child(-n + 9),
+.sudoku-row:nth-child(n + 7):nth-child(-n + 9) .sudoku-cell:nth-child(-n + 3),
+.sudoku-row:nth-child(n + 7):nth-child(-n + 9) .sudoku-cell:nth-child(n + 7):nth-child(-n + 9) {
+    background-color: var(--region-bg-a);
+}
+
+.sudoku-row:nth-child(-n + 3) .sudoku-cell:nth-child(n + 4):nth-child(-n + 6),
+.sudoku-row:nth-child(n + 4):nth-child(-n + 6) .sudoku-cell:nth-child(-n + 3),
+.sudoku-row:nth-child(n + 4):nth-child(-n + 6) .sudoku-cell:nth-child(n + 7):nth-child(-n + 9),
+.sudoku-row:nth-child(n + 7):nth-child(-n + 9) .sudoku-cell:nth-child(n + 4):nth-child(-n + 6) {
+    background-color: var(--region-bg-b);
 }
 
 .sudoku-cell.prefilled {
