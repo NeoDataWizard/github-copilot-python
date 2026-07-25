@@ -3,6 +3,7 @@ const SIZE = 9;
 let puzzle = [];
 let elapsedSeconds = 0;
 let timerIntervalId = null;
+let hintsUsed = 0;
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60);
@@ -83,6 +84,21 @@ function renderPuzzle(puz) {
   }
 }
 
+function getBoardState() {
+  const boardDiv = document.getElementById('sudoku-board');
+  const inputs = boardDiv.getElementsByTagName('input');
+  const board = [];
+  for (let i = 0; i < SIZE; i++) {
+    board[i] = [];
+    for (let j = 0; j < SIZE; j++) {
+      const idx = i * SIZE + j;
+      const val = inputs[idx].value;
+      board[i][j] = val ? parseInt(val, 10) : 0;
+    }
+  }
+  return board;
+}
+
 function getSelectedDifficultyClues() {
   const difficultySelect = document.getElementById('difficulty-select');
   const difficulty = difficultySelect ? difficultySelect.value : 'Medium';
@@ -100,6 +116,7 @@ function getSelectedDifficultyClues() {
 async function newGame() {
   resetTimer();
   startTimer();
+  hintsUsed = 0;
   const clues = getSelectedDifficultyClues();
   const res = await fetch(`/new?clues=${clues}`);
   const data = await res.json();
@@ -107,18 +124,40 @@ async function newGame() {
   document.getElementById('message').innerText = '';
 }
 
-async function checkSolution() {
+async function hintSolution() {
+  const board = getBoardState();
+  const res = await fetch('/hint', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({board})
+  });
+  const data = await res.json();
+  const msg = document.getElementById('message');
+  if (data.error) {
+    msg.style.color = '#d32f2f';
+    msg.innerText = data.error;
+    return;
+  }
+  if (data.message) {
+    msg.style.color = '#1976d2';
+    msg.innerText = data.message;
+    return;
+  }
+
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
-  const board = [];
-  for (let i = 0; i < SIZE; i++) {
-    board[i] = [];
-    for (let j = 0; j < SIZE; j++) {
-      const idx = i * SIZE + j;
-      const val = inputs[idx].value;
-      board[i][j] = val ? parseInt(val, 10) : 0;
-    }
-  }
+  const idx = data.row * SIZE + data.col;
+  const inp = inputs[idx];
+  inp.value = String(data.value);
+  inp.disabled = true;
+  inp.className = 'sudoku-cell hinted';
+  hintsUsed += 1;
+  msg.style.color = '#1976d2';
+  msg.innerText = 'Hint applied.';
+}
+
+async function checkSolution() {
+  const board = getBoardState();
   const res = await fetch('/check', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
@@ -152,6 +191,7 @@ async function checkSolution() {
 // Wire buttons
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
+  document.getElementById('hint-solution').addEventListener('click', hintSolution);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   // initialize
   newGame();
